@@ -1,0 +1,209 @@
+# =============================================================================
+# Docker Compose — Orchestrates all services and infrastructure
+#
+# Docker Compose manages multiple containers as a single application.
+# It's like having a script that starts all your services in the right order
+# with the right configuration.
+#
+# KEY CONCEPTS:
+# - "services": Each entry becomes a running container
+# - "volumes": Persistent storage that survives container restarts
+# - "networks": Isolated network for inter-service communication
+# - "depends_on": Startup ordering (but doesn't wait for "ready")
+# - Service names become DNS hostnames (e.g., "postgres" resolves to
+#   the PostgreSQL container's IP address)
+#
+# Start everything:  docker compose up -d --build
+# View logs:         docker compose logs -f
+# Stop everything:   docker compose down
+# Stop + delete data: docker compose down -v  (deletes volumes!)
+# =============================================================================
+
+services:
+
+  # ===========================================================================
+  # PostgreSQL — Relational database for document metadata
+  # ===========================================================================
+  # Stores the "documents" table with metadata (id, filename, status, etc.)
+  # EF Core connects to this and auto-creates tables on startup.
+  postgres:
+    image: postgres:16-alpine
+    # "alpine" variant is ~80MB vs ~400MB for the full image
+    container_name: doc-postgres
+    environment:
+      # These env vars are read by the PostgreSQL Docker image on first run
+      # to create the initial database and user
+      POSTGRES_DB: document_db
+      POSTGRES_USER: docuser
+      POSTGRES_PASSWORD: docpass
+    ports:
+      # Map host port 5432 to container port 5432
+      # This lets you connect from the host (e.g., pgAdmin, DBeaver)
+      - "5432:5432"
+    volumes:
+      # Named volume for persistent data — survives container restarts
+      # Without this, all data is lost when the container stops
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # Health check verifies PostgreSQL is actually accepting connections
+      # (not just that the container is running)
+      test: ["CMD-SHELL", "pg_isready -U docuser -d document_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================================================
+  # MongoDB — Document/file storage (GridFS)
+  # ===========================================================================
+  # Stores the actual file content (PDFs, DOCX, TXT) using GridFS.
+  # The Document Service uploads files here, and serves downloads from here.
+  mongodb:
+    image: mongo:7
+    container_name: doc-mongodb
+    ports:
+      # Map host port 27017 for local tools (MongoDB Compass, etc.)
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+
+  # ===========================================================================
+  # RAG Service — Python FastAPI (our previously built service)
+  # ===========================================================================
+  # Handles document indexing (chunking + embedding + ChromaDB storage)
+  # and question answering via Ollama LLM.
+  rag-service:
+    build:
+      context: ./rag-service
+      dockerfile: Dockerfile
+    container_name: doc-rag-service
+    ports:
+      - "5002:5002"
+    volumes:
+      # Persistent ChromaDB vector storage
+      - rag-chroma-data:/app/chroma_data
+    environment:
+      # Override the .env defaults for Docker networking
+      # "host.docker.internal" is Docker's DNS name for the host machine
+      # (where Ollama runs)
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      CHROMA_PERSIST_DIR: /app/chroma_data
+    extra_hosts:
+      # Ensure host.docker.internal resolves on Linux Docker hosts
+      # (It's automatic on Windows/Mac Docker Desktop)
+      - "host.docker.internal:host-gateway"
+
+  # ===========================================================================
+  # Document Service — .NET 8 Web API (what we just built)
+  # ===========================================================================
+  # Handles document uploads, stores files in MongoDB, metadata in PostgreSQL,
+  # and triggers RAG indexing.
+  document-service:
+    build:
+      context: ./document-service
+      dockerfile: Dockerfile
+    container_name: doc-document-service
+    ports:
+      - "5001:5001"
+    environment:
+      # Override connection strings for Docker networking.
+      # In Docker Compose, services reach each other by service name.
+      #
+      # ASP.NET Core reads these environment variables and they override
+      # whatever is in appsettings.json. The "__" (double underscore)
+      # maps to ":" in the configuration hierarchy:
+      #   ConnectionStrings__PostgreSQL → ConnectionStrings:PostgreSQL
+      ConnectionStrings__PostgreSQL: "Host=postgres;Port=5432;Database=document_db;Username=docuser;Password=docpass"
+      ConnectionStrings__MongoDB: "mongodb://mongodb:27017"
+      MongoDB__DatabaseName: "document_db"
+      RagService__BaseUrl: "http://rag-service:5002/api/rag"
+      ASPNETCORE_ENVIRONMENT: "Development"
+    depends_on:
+      # Start PostgreSQL and MongoDB before this service.
+      # depends_on with "condition: service_healthy" waits for the health check.
+      # Without conditions, it only waits for the container to start (not ready).
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+      rag-service:
+        condition: service_started
+
+  # ===========================================================================
+  # API Gateway — .NET 8 + YARP Reverse Proxy
+  # ===========================================================================
+  # Single entry point for all client requests (port 5000).
+  # Routes requests to the correct microservice based on URL path:
+  #   /api/documents/* → Document Service (port 5001)
+  #   /api/rag/*       → RAG Service (port 5002)
+  #   /api/reports/*   → Report Service (port 5003)
+  #
+  # Also handles cross-cutting concerns:
+  #   - CORS headers
+  #   - Request correlation IDs
+  #   - Request/response logging
+  #   - Health checks for all downstream services
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: doc-api-gateway
+    ports:
+      # This is the ONLY port the frontend/client needs to know about
+      - "5000:5000"
+    environment:
+      # Override service URLs for Docker networking
+      # YARP reads these via the configuration system
+      ReverseProxy__Clusters__document-service-cluster__Destinations__destination1__Address: "http://document-service:5001"
+      ReverseProxy__Clusters__rag-service-cluster__Destinations__destination1__Address: "http://rag-service:5002"
+      ReverseProxy__Clusters__report-service-cluster__Destinations__destination1__Address: "http://report-service:5003"
+      Services__DocumentService: "http://document-service:5001"
+      Services__RagService: "http://rag-service:5002"
+      ASPNETCORE_ENVIRONMENT: "Development"
+    depends_on:
+      document-service:
+        condition: service_started
+      rag-service:
+        condition: service_started
+      report-service:
+        condition: service_started
+
+  # ===========================================================================
+  # Report Service — .NET 8 + QuestPDF PDF Generation
+  # ===========================================================================
+  # Generates professional PDF reports:
+  #   - Document Summary Reports (metadata + RAG status)
+  #   - Q&A Session Reports (questions, answers, source citations)
+  #   - System Analytics Reports (aggregate statistics, charts)
+  #
+  # Calls Document Service and RAG Service directly (not through the gateway)
+  # to avoid a circular dependency (gateway → report-service → gateway).
+  report-service:
+    build:
+      context: ./report-service
+      dockerfile: Dockerfile
+    container_name: doc-report-service
+    ports:
+      - "5003:5003"
+    environment:
+      # Override service URLs for Docker networking.
+      # The Report Service calls downstream services directly (not through
+      # the API Gateway) to avoid circular dependencies.
+      Services__DocumentService: "http://document-service:5001/api/documents/"
+      Services__RagService: "http://rag-service:5002/api/rag/"
+      ASPNETCORE_ENVIRONMENT: "Development"
+    depends_on:
+      document-service:
+        condition: service_started
+      rag-service:
+        condition: service_started
+
+# =============================================================================
+# Named Volumes — Persistent data storage
+# =============================================================================
+# Named volumes persist data across container restarts and rebuilds.
+# Data is stored in Docker's managed volume directory on the host.
+# To see where: docker volume inspect doc-processing_postgres-data
+volumes:
+  postgres-data:
+  mongodb-data:
+  rag-chroma-data:

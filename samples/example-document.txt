@@ -1,0 +1,60 @@
+Acme Corporation - Remote Work Policy
+Effective Date: January 15, 2026
+Version: 2.1
+
+1. POLICY OVERVIEW
+
+Acme Corporation recognizes that remote work arrangements can benefit both the organization and its employees. This policy establishes guidelines for employees who work from home or other approved remote locations. The goal is to maintain productivity, collaboration, and company culture while providing flexibility to our workforce.
+
+All full-time employees who have completed their probationary period of 90 days are eligible to apply for remote work arrangements. Part-time employees and contractors may also be considered on a case-by-case basis, subject to manager approval and business needs.
+
+2. ELIGIBILITY AND APPROVAL PROCESS
+
+Employees must submit a Remote Work Request Form to their direct manager at least two weeks before the desired start date. The manager will evaluate the request based on the employee's role requirements, performance history, and team collaboration needs. Requests are approved for a renewable six-month period.
+
+Positions that require physical presence (such as facilities maintenance, laboratory work, or front-desk reception) are generally not eligible for full remote work but may qualify for hybrid arrangements of up to two days per week.
+
+3. WORK SCHEDULE AND AVAILABILITY
+
+Remote employees are expected to maintain their standard work hours (9:00 AM to 5:00 PM in their local time zone) unless an alternative schedule has been approved in writing. All remote workers must be reachable via company communication tools (Slack, Microsoft Teams, and email) during core business hours of 10:00 AM to 3:00 PM Eastern Time.
+
+Employees must attend all scheduled meetings, whether virtual or in-person. If an in-person meeting is required, remote employees are expected to travel to the office with at least 48 hours notice. Travel expenses for mandatory in-office meetings will be reimbursed according to the company travel policy.
+
+4. EQUIPMENT AND TECHNOLOGY
+
+Acme Corporation will provide each remote employee with a company laptop, external monitor, keyboard, and mouse. Employees are responsible for maintaining a reliable internet connection with a minimum speed of 50 Mbps download and 10 Mbps upload. The company will reimburse up to $75 per month for internet costs.
+
+All company data must be accessed through the corporate VPN. Employees must not use public Wi-Fi networks without VPN protection. Personal devices may not be used to access company systems unless enrolled in the Mobile Device Management (MDM) program.
+
+5. DATA SECURITY AND PRIVACY
+
+Remote employees must follow the same data security protocols as in-office employees. This includes locking their computer when stepping away, using encrypted storage for sensitive files, and reporting any security incidents within one hour of discovery.
+
+Confidential meetings must be conducted in a private space where conversations cannot be overheard. Screen sharing during video calls must be done carefully to avoid exposing sensitive information. Employees handling customer financial data (PII/PCI) must ensure their workspace meets additional security requirements outlined in Appendix B.
+
+6. PERFORMANCE EXPECTATIONS
+
+Remote employees are held to the same performance standards as in-office colleagues. Managers will conduct monthly check-ins to discuss workload, goals, and any challenges related to remote work. Performance will be evaluated based on output and results rather than hours logged.
+
+If performance concerns arise, the manager may require increased availability, more frequent check-ins, or temporary return to in-office work. Continued underperformance may result in revocation of remote work privileges.
+
+7. HEALTH AND SAFETY
+
+Employees are responsible for maintaining a safe and ergonomic workspace at home. The company offers a one-time $500 stipend for home office setup, which may be used for an ergonomic chair, standing desk, lighting, or other workspace improvements.
+
+Workers' compensation coverage applies to injuries sustained during work hours in the designated home workspace. Employees must report any work-related injuries immediately, following the standard incident reporting procedures.
+
+8. EXPENSES AND REIMBURSEMENT
+
+In addition to the internet reimbursement and home office stipend mentioned above, remote employees may claim the following expenses:
+- Office supplies (paper, pens, printer ink): up to $50/quarter
+- Phone charges for business calls: actual cost
+- Required software or tools not provided by IT: with prior approval
+
+All expense claims must be submitted through the Concur expense system within 30 days of purchase, accompanied by receipts.
+
+9. TERMINATION OF REMOTE WORK
+
+Remote work arrangements may be terminated by either the employee or the company with two weeks written notice. In cases of policy violation, remote work privileges may be revoked immediately. Upon termination of employment, all company equipment must be returned within five business days via prepaid shipping provided by the company.
+
+For questions about this policy, contact Human Resources at hr@acmecorp.com or extension 4500.
