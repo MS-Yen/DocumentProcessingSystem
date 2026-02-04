@@ -172,7 +172,7 @@ DocumentProcessingSystem/
 └── test-report-service.py        # 30 tests
 ```
 
-The .NET services use Clean Architecture (Core / Infrastructure / API layers). The code includes detailed comments explaining C#/.NET concepts with Python equivalents.
+The .NET services use Clean Architecture (Core / Infrastructure / API layers).
 
 ## Testing
 
