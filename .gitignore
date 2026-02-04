@@ -36,3 +36,6 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# Test artifacts
+*.coverage
